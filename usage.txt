@@ -1,0 +1,47 @@
+Usage: ArbScripter <parameter options>
+where <parameter options> is 0 or more of:
+ -i <instrument address or alias>
+ -e <python code to be evaluated>
+ -f <filename of script to be interpreted>
+
+Script files are line oriented. Use '' at line end for continuation.
+
+The leading character determines action taken for a logical line:
+ '!' => send following text immediately as an instrument command. [a]
+ '&' => send following text as a buffered instrument command. [a]
+ '*' => send following text with length-prefixed parameter block. [a,b]
+ '?' => send following text immediately as an instrument query. [c]
+ '=' => evaluate following text or block as IronPython code. [d]
+ '@' => send following text appended by vector as binary block. [a,e]
+ '>' => output following text with brace-enclosed variables to console.
+ '<' => treat following text as filename and interpret file's lines.
+ '%' => following text is comment, no action to be taken.
+ '.' => terminate script execution. (good for debugging)
+
+[a. Within the text, brace-enclosed identifiers will be replaced,
+ (along with the braces), with the string representation of an object
+ referenced in the Python global namespace by the given identifier.
+ It is an abort-inducing error for the identifier to be undefined. ]
+
+[b. Parameter block after '#' will be prefixed by its length coded in
+ Keysight's strange <digit><length> format, where <digit> is a single
+ digit specifying the number of digits in the base-10 ASCII <length>,
+ which specifies the number of characters in remaining command text. ]
+
+[c. Text returned by instrument sent to stdout without other effect. ]
+
+[d. Text on same line is treated as a single-line code block. When the
+ remaining line is blank, following lines, up to but not including a
+ lone '_' character, are collected and evaluated as the code block. ]
+
+[e. The vector name may be specified with a brace-enclosed identifier
+ at the text's end, or the default name, 'samples', will be used. ]
+
+Python code block executions share the same global namespace, and may
+access an instrument access object named 'arb' having these members:
+ void Command(string cmd, bool flush = true)
+ string Query(string cmd)
+ bool SendFloats(string lead, List<float> vf)
+ void SendBlock(string lead, float[] z)
+ bool SendWithParamLength(string text)
+ const string noErrString
